@@ -1,5 +1,7 @@
 import re
 import pandas as pd
+from streamlit.runtime.scriptrunner import add_script_run_ctx
+import threading  # Corrected: No indentation for import statements
 import pyttsx3
 from sklearn import preprocessing
 from sklearn.tree import DecisionTreeClassifier,_tree
@@ -9,6 +11,8 @@ from sklearn.model_selection import cross_val_score
 from sklearn.svm import SVC
 import csv
 import warnings
+import streamlit as st
+import os
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 
@@ -23,7 +27,6 @@ y1= y
 
 reduced_data = training.groupby(training['prognosis']).max()
 
-#mapping strings to numbers
 le = preprocessing.LabelEncoder()
 le.fit(y)
 y = le.transform(y)
@@ -37,10 +40,9 @@ testy    = le.transform(testy)
 
 clf1  = DecisionTreeClassifier()
 clf = clf1.fit(x_train,y_train)
-# print(clf.score(x_train,y_train))
-# print ("cross result========")
+
 scores = cross_val_score(clf, x_test, y_test, cv=3)
-# print (scores)
+
 print (scores.mean())
 
 
@@ -53,17 +55,35 @@ importances = clf.feature_importances_
 indices = np.argsort(importances)[::-1]
 features = cols
 
+
+def getSeverityDict():
+    global severityDictionary
+    try:  # Start of the try block
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        file_path = os.path.join(script_dir, 'MasterData/symptom_severity.csv') 
+        with open(file_path) as csv_file:
+            csv_reader = csv.reader(csv_file, delimiter=',')
+            line_count = 0
+            for row in csv_reader:
+                _diction = {row[0]: int(row[1])}
+                severityDictionary.update(_diction)
+    except FileNotFoundError:  
+        st.error("Error: Could not find symptom_severity.csv. Please check the file path.")
+
 def readn(nstr):
-    engine = pyttsx3.init()
+        def say_aloud():
+            engine = pyttsx3.init()
+            engine.setProperty('voice', "english+f5")
+            engine.setProperty('rate', 130)
+            engine.say(nstr)
+            engine.runAndWait()
+            engine.stop()
 
-    engine.setProperty('voice', "english+f5")
-    engine.setProperty('rate', 130)
-
-    engine.say(nstr)
-    engine.runAndWait()
-    engine.stop()
-
-
+        thread = threading.Thread(target=say_aloud)
+        add_script_run_ctx(thread)
+        thread.start()
+        thread.join()
+   
 severityDictionary=dict()
 description_list = dict()
 precautionDictionary=dict()
@@ -90,8 +110,6 @@ def getDescription():
         for row in csv_reader:
             _description={row[0]:row[1]}
             description_list.update(_description)
-
-
 
 
 def getSeverityDict():
@@ -184,10 +202,7 @@ def tree_to_code(tree, feature_names):
 
             disease_input=cnf_dis[conf_inp]
             break
-            # print("Did you mean: ",cnf_dis,"?(yes/no) :",end="")
-            # conf_inp = input("")
-            # if(conf_inp=="yes"):
-            #     break
+          
         else:
             print("Enter valid symptom.")
 
@@ -214,13 +229,10 @@ def tree_to_code(tree, feature_names):
                 recurse(tree_.children_right[node], depth + 1)
         else:
             present_disease = print_disease(tree_.value[node])
-            # print( "You may have " +  present_disease )
+  
             red_cols = reduced_data.columns 
             symptoms_given = red_cols[reduced_data.loc[present_disease].values[0].nonzero()]
-            # dis_list=list(symptoms_present)
-            # if len(dis_list)!=0:
-            #     print("symptoms present  " + str(list(symptoms_present)))
-            # print("symptoms given "  +  str(list(symptoms_given)) )
+           
             print("Are you experiencing any ")
             symptoms_exp=[]
             for syms in list(symptoms_given):
@@ -236,28 +248,30 @@ def tree_to_code(tree, feature_names):
                     symptoms_exp.append(syms)
 
             second_prediction=sec_predict(symptoms_exp)
-            # print(second_prediction)
+          
             calc_condition(symptoms_exp,num_days)
-            if(present_disease[0]==second_prediction[0]):
+            
+            # Corrected indentation for the if-else block
+            if present_disease[0] == second_prediction[0]:  
                 print("You may have ", present_disease[0])
-                print(description_list[present_disease[0]])
+                st.write(f"You may have {present_disease[0]}.")
+                st.write(description_list[present_disease[0]])
+                readn(f"You may have {present_disease[0]}")
+                readn(f"{description_list[present_disease[0]]}")
 
-                # readn(f"You may have {present_disease[0]}")
-                # readn(f"{description_list[present_disease[0]]}")
 
             else:
                 print("You may have ", present_disease[0], "or ", second_prediction[0])
                 print(description_list[present_disease[0]])
                 print(description_list[second_prediction[0]])
 
-            # print(description_list[present_disease[0]])
+
+
             precution_list=precautionDictionary[present_disease[0]]
             print("Take following measures : ")
             for  i,j in enumerate(precution_list):
                 print(i+1,")",j)
 
-            # confidence_level = (1.0*len(symptoms_present))/len(symptoms_given)
-            # print("confidence level is " + str(confidence_level))
 
     recurse(0, 1)
 getSeverityDict()
@@ -267,3 +281,25 @@ getInfo()
 tree_to_code(clf,cols)
 print("----------------------------------------------------------------------------------------")
 
+def chatbot_frontend():
+    st.title("HealthCare ChatBot")
+
+    name = st.text_input("Your Name (optional):")
+    if name:
+        st.write(f"Hello, {name}!")
+
+    if "messages" not in st.session_state:
+        st.session_state.messages = []
+
+    for message in st.session_state.messages:
+        st.write(message)
+
+    user_input = st.text_input("Enter your symptom:")
+
+    if user_input:
+        st.session_state.messages.append({"role": "user", "content": user_input})
+
+        st.experimental_rerun()
+
+if __name__ == "__main__":
+    chatbot_frontend()
