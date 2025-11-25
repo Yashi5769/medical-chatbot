@@ -95,22 +95,3 @@ The model is trained on a dataset containing various symptoms and their correspo
 > **Note:** This chatbot is for **educational and informational purposes only**. It should not be used for medical diagnosis, advice, or treatment. Always consult with a qualified healthcare professional for medical concerns.
 
 ---
-
-## 🤝 Contributing
-
-Contributions are welcome!
-
-1.  **Fork** the repository.
-2.  Create a new branch:
-    ```bash
-    git checkout -b feature-branch
-    ```
-3.  Commit your changes:
-    ```bash
-    git commit -m 'Add new feature'
-    ```
-4.  Push to the branch:
-    ```bash
-    git push origin feature-branch
-    ```
-5.  Open a **Pull Request**.
