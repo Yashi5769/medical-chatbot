@@ -6,8 +6,6 @@ A machine learning-powered conversational AI designed to assist users with healt
 
 The Medical Chatbot acts as a virtual health assistant. It allows users to discuss their symptoms and receive information about potential conditions, precautions, and medications. While it serves as a helpful tool for preliminary information, it is **not a substitute for professional medical advice**.
 
-[Image of medical chatbot architecture NLP flow]
-
 ## ✨ Features
 
 * **Symptom Analysis:** Users can input symptoms, and the bot predicts potential diseases.
